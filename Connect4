@@ -1,0 +1,174 @@
+import numpy as np
+import pygame
+import time
+
+
+Row = 6
+Col = 7
+SquareSize = 100
+width = Col * SquareSize
+height = Row * SquareSize
+
+
+def win_Square(row, col):
+    pygame.draw.line(screen, (76, 68, 90), (row, col), (row+4, col+4))
+    pygame.display.update()
+    time.sleep(1)
+
+
+def Board():
+    gboard = np.zeros((7, 7))
+    return gboard
+
+
+def ani(row, col, colour):
+    r = 50
+    while int(r) <= int(row) * 100 + 50:
+        pygame.draw.circle(screen, (200, 88, 88), ((col + 1) * 100 - 50, r), 45)
+        pygame.draw.circle(screen, colour, ((col + 1) * 100 - 50, r + 10), 45)
+        pygame.draw.line(screen, (0, 0, 255), (0, 100), (700, 100), 5)
+        for c in range(Col):
+            for u in range(Row):
+                pygame.draw.circle(screen, (0, 0, 255), ((c + 1) * 100 - 50, u * 100 + 150), 50, 5)
+        r += 10
+        time.sleep(0.02)
+        pygame.display.update()
+
+
+def drop(board, row, col, piece):
+    board[row-1][col] = piece
+
+
+def draw_board(board):
+    screen.fill((255, 255, 0))
+    for c in range(Col):
+        for r in range(6):
+            pygame.draw.circle(screen, (0, 0, 255), ((c+1)*100-50, r*100 + 150), 50, 5)
+            if board[r][c] == 1:
+                pygame.draw.circle(screen, (255, 0, 0), ((c + 1) * 100 - 50, r * 100 + 150), 45)
+            if board[r][c] == 2:
+                pygame.draw.circle(screen, (0, 255, 0), ((c + 1) * 100 - 50, r * 100 + 150), 45)
+    pygame.draw.rect(screen, (0, 0, 255), (0, 100, 700, 600), 5)
+    pygame.draw.line(screen, (0, 0, 255), (0, 100), (700, 100), 5)
+    pygame.display.update()
+
+
+def valid(board, col):
+    return board[0][col] == 0
+
+
+def nextrow(board, col):
+    i = 0
+    while i <= 6:
+        if board[5-i][col] == 0:
+            c = 5-i
+            return c+1
+        i += 1
+
+
+def winner(board):
+    a = [0]*4
+    for c in range(Col-3):
+        for r in range(6):
+            if board[r][c] == board[r][c+1] == board[r][c+2] == board[r][c+3] != 0:
+                pygame.draw.rect(screen, (76, 68, 90), (c*100, r*100+100, 400, 100), 5)
+                pygame.display.update()
+                time.sleep(1)
+                return True
+
+    for r in range(6-3):
+        for c in range(Col):
+            if board[r][c] == board[r+1][c] == board[r+2][c] == board[r+3][c] != 0:
+                pygame.draw.rect(screen, (76, 68, 90), (c*100, r*100+100, 100, 400), 5)
+                pygame.display.update()
+                time.sleep(1)
+                return True
+
+    for i in range(3):
+        for j in range(4):
+            for z in range(4):
+                a[z] = int(board[z+i][z+j])
+            if a[0] == a[1] == a[2] == a[3] != 0:
+                time.sleep(1)
+                return True
+
+    for i in range(3):
+        for j in range(4):
+            for z in range(4):
+                a[z] = int(board[5-(z+i)][z+j])
+            if a[0] == a[1] == a[2] == a[3] != 0:
+                time.sleep(1)
+                return True
+
+
+def fade():
+    screen.fill((200, 200, 200))
+    pos = [(185, 250), (175, 350)]
+    mgs = ["GAME OVER", ("Player " + str(piece) + " Wins")]
+    font = pygame.font.SysFont('Georgia', 50, True)
+    pygame.display.update()
+    time.sleep(0.5)
+    for i in range(2):
+        colo = 200
+        while colo >= 0:
+            text = font.render(mgs[i], True, (colo, colo, colo))
+            screen.blit(text, pos[i])
+            pygame.display.update()
+            colo -= 1
+            time.sleep(0.005)
+    time.sleep(1)
+
+
+board = Board()
+turn = 0
+
+game_over = True
+pygame.init()
+screen = pygame.display.set_mode((width, height+100))
+draw_board(board)
+pygame.display.update()
+piece = 1
+while game_over:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            quit()
+        if event.type == pygame.MOUSEMOTION:
+            pygame.draw.rect(screen, (255, 255, 0), (0, 0, 700, 100))
+            posx = event.pos[0]
+            if turn == 0:
+                color = (255, 0, 0)
+            else:
+                color = (0, 255, 0)
+            pygame.draw.circle(screen, color, (posx, 50), 50)
+            pygame.display.update()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pygame.draw.rect(screen, (255, 255, 0), (0, 0, 700, 100))
+
+            if turn == 0:
+                col = int(event.pos[0] / 100)
+                if valid(board, col):
+                    drop(board, nextrow(board, col), col, 1)
+                    colour = (255, 0, 0)
+                    ani(nextrow(board, col)+1, col, colour)
+                    piece = 1
+                else:
+                    turn = 2
+
+            if winner(board):
+                break
+
+            if turn == 1:
+                col = int(event.pos[0] / 100)
+                if valid(board, col):
+                    drop(board, nextrow(board, col), col, 2)
+                    piece = 2
+                    colour = (0, 255, 0)
+                    ani(int(nextrow(board, col))+1, col, colour)
+                else:
+                    turn = 2
+            turn += 1
+            turn %= 2
+            draw_board(board)
+    if winner(board):
+        fade()
+        game_over = False
